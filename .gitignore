@@ -1,0 +1,23 @@
+# Real configuration, machine specific. Copy env.example to create it. The
+# template is committed, this one is not.
+.env
+
+# File manager artifacts. Dolphin/KDE creates .directory when you open the
+# folder; it serves no purpose and pollutes the repository.
+.directory
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Certificate backups. The generic pair in tls/ IS committed, but a .bak holding
+# a real server certificate must not end up in the repository.
+tls/*.bak
+tls/*.old
+tls/*~

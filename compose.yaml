@@ -1,0 +1,50 @@
+# Serves a fixed body and a fixed HTTP status code. There is no application: the
+# only process is nginx reading this config, so changing STATUS adds no weight.
+# The TLS certificate is mounted from ./tls (see README.md).
+services:
+  web:
+    # -slim drops optional modules we do not use: 21 MB versus 94 MB for
+    # nginx:alpine. It keeps the SSL module, the envsubst entrypoint and nc.
+    image: nginx:alpine-slim
+    container_name: helloworld
+    restart: unless-stopped
+
+    # Ports are chosen in .env, not here.
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
+
+    # The nginx entrypoint substitutes ${BODY} and ${STATUS} in the template.
+    # The filter is preventive: without it envsubst also replaces nginx's own
+    # variables ($host, $remote_addr...) and would break the config as soon as
+    # the template used one. The current template uses none, so dropping the
+    # filter changes nothing today.
+    environment:
+      BODY: "${BODY:-Hello World}"
+      STATUS: "${STATUS:-200}"
+      NGINX_ENVSUBST_FILTER: "^(BODY|STATUS)$"
+
+    volumes:
+      - ./templates/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      # Whole directory, not the individual files: if the certificate were
+      # missing, the error would come from nginx ("cannot load certificate")
+      # instead of Docker creating an empty directory named cert.pem.
+      - ./tls:/etc/nginx/tls:ro
+
+    # nc -z checks that the port accepts connections. Deliberately NOT wget:
+    # wget fails on any 4xx/5xx, so the container would be reported "unhealthy"
+    # exactly when STATUS=500, which is one of the cases you want to test.
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 80"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+    # Access logs stay capped so a server left up for weeks does not accumulate
+    # unbounded log files.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

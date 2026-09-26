@@ -1,0 +1,44 @@
+# nginx config template. The official image entrypoint runs envsubst on it at
+# startup and writes the result to /etc/nginx/conf.d/default.conf (replacing the
+# image's own default).
+#
+# Only STATUS and BODY are substituted; every other "$" is left untouched thanks
+# to NGINX_ENVSUBST_FILTER, set in compose.yaml.
+#
+# "return <code> <text>" answers and closes the connection: no backend, no
+# application and no code of our own. nginx accepts any code from 200 to 599
+# here, including non-standard ones (verified: 418, 444, 499, 599).
+
+server {
+    listen      80;
+    server_name _;
+
+    server_tokens off;
+
+    # The image serves application/octet-stream by default; text is what curl or
+    # a browser expects for a plain message.
+    default_type text/plain;
+
+    # Replaces nginx's built-in error page with the text from .env, so it serves
+    # the same thing with STATUS=200 as with STATUS=500.
+    return ${STATUS} "${BODY}";
+}
+
+server {
+    listen      443 ssl;
+    server_name _;
+
+    server_tokens off;
+
+    default_type text/plain;
+
+    # ./tls mounted read-only. It ships a GENERIC self-signed certificate: it
+    # only covers localhost and 127.0.0.1, so a client pointed at any other host
+    # will need -k. Replace tls/cert.pem and tls/key.pem with your own to have
+    # clients validate the chain without -k.
+    ssl_certificate     /etc/nginx/tls/cert.pem;
+    ssl_certificate_key /etc/nginx/tls/key.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    return ${STATUS} "${BODY}";
+}
