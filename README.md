@@ -103,7 +103,9 @@ docker compose down     # stop and remove
 The technical decisions and their reasons live in the comments of the files
 themselves and in `AGENTS.md`.
 
-## License
+## License, version and author
 
-MIT, see [LICENSE](LICENSE). Current version in [VERSION](VERSION), history in
-[CHANGELOG.md](CHANGELOG.md).
+- **License**: MIT, see [LICENSE](LICENSE)
+- **Version**: [VERSION](VERSION), history in [CHANGELOG.md](CHANGELOG.md)
+- **Author**: [kopernix](https://github.com/kopernix)
+- **Repository**: <https://github.com/kopernix/hello-world-webserver>
