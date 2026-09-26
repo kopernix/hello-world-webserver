@@ -21,9 +21,14 @@ ko()  { FAIL=$((FAIL+1)); echo "  FAIL  $1"; }
 run() { if eval "$2" >/dev/null 2>&1; then ok "$1"; else ko "$1"; fi; }
 
 cleanup() {
-    [ -n "$STACK" ] && (cd "$STACK" && docker compose down -v) >/dev/null 2>&1
+    # Must remove the directories, not just the containers: an early exit would
+    # otherwise leave a copy of the project behind in the parent directory.
+    if [ -n "$STACK" ] && [ -d "$STACK" ]; then
+        (cd "$STACK" && docker compose down -v) >/dev/null 2>&1
+        cd / || true
+        rm -rf "$STACK"
+    fi
     [ -n "$COPY" ] && rm -rf "$COPY"
-    [ -n "$CERT" ] && rm -rf "$CERT"
 }
 trap cleanup EXIT INT TERM
 
